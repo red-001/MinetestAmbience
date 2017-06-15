@@ -210,8 +210,8 @@ local lava2 = {
 	{name="earth01a", length=15, gain=lava_volume}
 }
 
-
-local play_music = minetest.setting_getbool("music") or false
+local modstorage = core.get_mod_storage()
+local play_music = modstorage:get_string("music") == "true"
 local music = {
 	handler = {},
 	frequency = music_frequency,
@@ -229,58 +229,68 @@ local music = {
 }
 
 local is_daytime = function()
-	return (minetest.env:get_timeofday() > 0.2 and  minetest.env:get_timeofday() < 0.8)
+	return (minetest.get_timeofday() > 0.2 and  minetest.get_timeofday() < 0.8)
 end
-
+local function count_nodes_in_area(minp, maxp, nodenames)
+	local num = 0
+	for x = minp.x, maxp.x do
+		for y = minp.y, maxp.y do
+			for z = minp.y, maxp.y do
+				local pos = {x=x,y=y,z=z}
+				local node_name = minetest.get_node(pos).name
+    				if node_name == nodenames then
+					num = num + 1
+				end
+			end
+		end
+	end
+	return num
+end
 local nodes_in_range = function(pos, search_distance, node_name)
 	minp = {x=pos.x-search_distance,y=pos.y-search_distance, z=pos.z-search_distance}
 	maxp = {x=pos.x+search_distance,y=pos.y+search_distance, z=pos.z+search_distance}
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)
-	--minetest.chat_send_all("Found (" .. node_name .. ": " .. #nodes .. ")")
-	return #nodes
+	return count_nodes_in_area(minp, maxp, node_name)
 end
 
 local nodes_in_coords = function(minp, maxp, node_name)
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)
-	--minetest.chat_send_all("Found (" .. node_name .. ": " .. #nodes .. ")")
-	return #nodes
+	return count_nodes_in_area(minp, maxp, node_name)
 end
 
 local atleast_nodes_in_grid = function(pos, search_distance, height, node_name, threshold)
 	counter = counter +1
 --	minetest.chat_send_all("counter: (" .. counter .. ")")
-	minp = {x=pos.x-search_distance,y=height, z=pos.z+20}
-	maxp = {x=pos.x+search_distance,y=height, z=pos.z+20}
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)
+	local minp = {x=pos.x-search_distance,y=height, z=pos.z+20}
+	local maxp = {x=pos.x+search_distance,y=height, z=pos.z+20}
+	local num_nodes = count_nodes_in_area(minp, maxp, node_name)
 --	minetest.chat_send_all("z+Found (" .. node_name .. ": " .. #nodes .. ")")
-	if #nodes >= threshold then
+	if num_nodes >= threshold then
 		return true
 	end
-	totalnodes = #nodes
+	totalnodes = num_nodes
 	minp = {x=pos.x-search_distance,y=height, z=pos.z-20}
 	maxp = {x=pos.x+search_distance,y=height, z=pos.z-20}
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)
+	num_nodes = count_nodes_in_area(minp, maxp, node_name)
 --	minetest.chat_send_all("z-Found (" .. node_name .. ": " .. #nodes .. ")")
-	if #nodes >= threshold then
+	if num_nodes >= threshold then
 		return true
 	end
-	totalnodes = totalnodes + #nodes
+	totalnodes = totalnodes + num_nodes
 	maxp = {x=pos.x+20,y=height, z=pos.z+search_distance}
 	minp = {x=pos.x+20,y=height, z=pos.z-search_distance}
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)	
+	num_nodes = count_nodes_in_area(minp, maxp, node_name)	
 --	minetest.chat_send_all("x+Found (" .. node_name .. ": " .. #nodes .. ")")
-	if #nodes >= threshold then
+	if num_nodes >= threshold then
 		return true
 	end
-	totalnodes = totalnodes + #nodes
+	totalnodes = totalnodes + num_nodes
 	maxp = {x=pos.x-20,y=height, z=pos.z+search_distance}
 	minp = {x=pos.x-20,y=height, z=pos.z-search_distance}
-	nodes = minetest.env:find_nodes_in_area(minp, maxp, node_name)	
+	num_nodes = count_nodes_in_area(minp, maxp, node_name)	
 --	minetest.chat_send_all("x+Found (" .. node_name .. ": " .. #nodes .. ")")	
-	if #nodes >= threshold then
+	if num_nodes >= threshold then
 		return true
 	end
-	totalnodes = totalnodes + #nodes
+	totalnodes = totalnodes + num_nodes
 --	minetest.chat_send_all("Found total(" .. totalnodes .. ")")
 	if totalnodes >= threshold*2 then
 		return true
@@ -290,14 +300,14 @@ end
 
 local get_immediate_nodes = function(pos)
 	pos.y = pos.y-1
-	node_under_feet = minetest.env:get_node(pos).name
+	node_under_feet = minetest.get_node(pos).name
 	pos.y = pos.y-3
-	node_3_under_feet = minetest.env:get_node(pos).name
+	node_3_under_feet = minetest.get_node(pos).name
 	pos.y = pos.y+3
 	pos.y = pos.y+2.2
-	node_at_upper_body = minetest.env:get_node(pos).name
+	node_at_upper_body = minetest.get_node(pos).name
 	pos.y = pos.y-1.19   
-	node_at_lower_body = minetest.env:get_node(pos).name
+	node_at_lower_body = minetest.get_node(pos).name
 	pos.y = pos.y+0.99  
 	--minetest.chat_send_all("node_under_feet(" .. nodename .. ")")
 end 
@@ -308,7 +318,7 @@ local get_ambience = function(player)
 	local player_is_descending = false
 	local player_is_moving_horiz = false
 	local standing_in_water = false
-	local pos = player:getpos()
+	local pos = player:get_pos()
 	get_immediate_nodes(pos)
 
 	if last_x_pos ~=pos.x or last_z_pos ~=pos.z then 
@@ -460,7 +470,7 @@ local get_ambience = function(player)
 --	minetest.chat_send_all("Found " .. nodename .. pos.y )
 	
 
-	if player:getpos().y < 0 then
+	if player:get_pos().y < 0 then
 		if music then
 			return {cave=cave, cave_frequent=cave_frequent, music=music}
 		else
@@ -484,7 +494,7 @@ end
 
 -- start playing the sound, set the handler and delete the handler after sound is played
 local play_sound = function(player, list, number, is_music)
-	local player_name = player:get_player_name()
+	local player_name = player:get_name()
 	if list.handler[player_name] == nil then
 		local gain = 1.0
 		if list[number].gain ~= nil then
@@ -496,7 +506,7 @@ local play_sound = function(player, list, number, is_music)
 				--minetest.chat_send_all("gain sound: " .. gain )
 			end
 		end
-		local handler = minetest.sound_play(list[number].name, {to_player=player_name, gain=gain})
+		local handler = minetest.sound_play(list[number].name, {gain=gain})
 		if handler ~= nil then
 			list.handler[player_name] = handler
 			minetest.after(list[number].length, function(args)
@@ -513,7 +523,7 @@ end
 
 -- stops all sounds that are not in still_playing
 local stop_sound = function(still_playing, player)
-	local player_name = player:get_player_name()
+	local player_name = player:get_name()
 	if still_playing.cave == nil then
 		local list = cave
 		if list.handler[player_name] ~= nil then
@@ -735,38 +745,41 @@ local stop_sound = function(still_playing, player)
 end
 
 local timer = 0
+local localplayer
+minetest.register_on_connect(function()
+        localplayer = minetest.localplayer
+end)
 minetest.register_globalstep(function(dtime)
+	if not localplayer then return end
 	timer = timer+dtime
 	if timer < 1 then
 		return
 	end
 	timer = 0
 
-	for _,player in ipairs(minetest.get_connected_players()) do
-		ambiences = get_ambience(player)
-		stop_sound(ambiences, player)
-		for _,ambience in pairs(ambiences) do
-			if math.random(1, 1000) <= ambience.frequency then			
---				if(played_on_start) then
---				--	minetest.chat_send_all("playedOnStart "  )
---				else
---				--	minetest.chat_send_all("FALSEplayedOnStart "  )
---				end
-				if ambience.on_start ~= nil and played_on_start == false then
-					played_on_start = true
-					minetest.sound_play(ambience.on_start, {to_player=player:get_player_name(),gain=SOUNDVOLUME})					
-				end
-			--	minetest.chat_send_all("ambience: " ..ambience )
-			--	if ambience.on_start ~= nil and played_on_start_flying == false then
-			--		played_on_start_flying = true
-			--		minetest.sound_play(ambience.on_start, {to_player=player:get_player_name()})					
-			--	end
-				local is_music =false
-				if ambience.is_music ~= nil then
-					is_music = true
-				end
-				play_sound(player, ambience, math.random(1, #ambience),is_music)
+	ambiences = get_ambience(localplayer)
+	stop_sound(ambiences, localplayer)
+	for _,ambience in pairs(ambiences) do
+		if math.random(1, 1000) <= ambience.frequency then			
+--			if(played_on_start) then
+--			--	minetest.chat_send_all("playedOnStart "  )
+--			else
+--			--	minetest.chat_send_all("FALSEplayedOnStart "  )
+--			end
+			if ambience.on_start ~= nil and played_on_start == false then
+				played_on_start = true
+				minetest.sound_play(ambience.on_start, {gain=SOUNDVOLUME})				
 			end
+		--	minetest.chat_send_all("ambience: " ..ambience )
+		--	if ambience.on_start ~= nil and played_on_start_flying == false then
+			--		played_on_start_flying = true
+		--		minetest.sound_play(ambience.on_start)					
+		--	end
+			local is_music =false
+			if ambience.is_music ~= nil then
+					is_music = true
+			end
+			play_sound(localplayer, ambience, math.random(1, #ambience),is_music)
 		end
 	end
 end)
@@ -774,22 +787,20 @@ end)
 minetest.register_chatcommand("svol", {
 	params = "<svol>",
 	description = "set volume of sounds, default 1 normal volume.",
-	privs = {server=true},
 	func = function(name, param)
 		SOUNDVOLUME = param
 	--	local player = minetest.env:get_player_by_name(name)
 	--	ambiences = get_ambience(player)
 	--	stop_sound({}, player)
-		minetest.chat_send_player(name, "Sound volume set.")
+		minetest.display_chat_message("Sound volume set.")
 	end,		})
 minetest.register_chatcommand("mvol", {
 	params = "<mvol>",
 	description = "set volume of music, default 1 normal volume.",
-	privs = {server=true},
 	func = function(name, param)
 		MUSICVOLUME = param
 	--	local player = minetest.env:get_player_by_name(name)
 	--	stop_sound({}, player)
 	--	ambiences = get_ambience(player)	
-		minetest.chat_send_player(name, "Music volume set.")
+		minetest.display_chat_message("Music volume set.")
 	end,		})	
