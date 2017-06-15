@@ -187,8 +187,6 @@ local lava2 = {
 	{name="earth01a", length=15, gain=lava_volume}
 }
 
-local modstorage = core.get_mod_storage()
-local play_music = modstorage:get_string("music") == "true"
 local music = {
 
 	frequency = music_frequency,
