@@ -53,9 +53,6 @@ local counter=0--*****************
 local SOUNDVOLUME = 1
 local MUSICVOLUME = 1
 local sound_vol = 1
-local last_x_pos = 0
-local last_y_pos = 0
-local last_z_pos = 0
 local node_under_feet
 local node_at_upper_body
 local node_at_lower_body
@@ -66,7 +63,6 @@ local played_on_start = false
 
 
 local night = {
-	handler = {},
 	frequency = night_frequency,
 	{name="horned_owl", length=3, gain=night_volume},
 	{name="Wolves_Howling", length=11,  gain=night_volume},
@@ -74,13 +70,11 @@ local night = {
 }
 
 local night_frequent = {
-	handler = {},
 	frequency = night_frequent_frequency,
 	{name="Crickets_At_NightCombo", length=69, gain=night_frequent_volume}
 }
 
 local day = {
-	handler = {},
 	frequency = day_frequency,
 	{name="Best Cardinal Bird", length=4, gain=day_volume},
 	{name="craw", length=3, gain=day_volume},
@@ -89,7 +83,6 @@ local day = {
 }
 
 local day_frequent = {
-	handler = {},
 	frequency = day_frequent_frequency,
 	{name="robin2", length=16, gain=day_frequent_volume},
 	{name="birdsongnl", length=13, gain=day_frequent_volume},
@@ -100,20 +93,17 @@ local day_frequent = {
 	{name="ComboWind", length=17,  gain=day_frequent_volume*3}
 }
 local swimming_frequent = {
-	handler = {},
 	frequency = day_frequent_frequency,
 	{name="water_swimming_splashing_breath", length=11.5, gain=swimming_frequent_volume},
 	{name="water_swimming_splashing", length=9, gain=swimming_frequent_volume}
 }
 
 local cave = {
-	handler = {},
 	frequency = cave_frequency,
 	{name="Bats_in_Cave", length=5, gain=cave_volume}
 }
 
 local cave_frequent = {
-	handler = {},
 	frequency = cave_frequent_frequency,
 	{name="drippingwater_drip_a", length=2, gain=cave_frequent_volume},
 	{name="drippingwater_drip_b", length=2, gain=cave_frequent_volume},
@@ -123,32 +113,27 @@ local cave_frequent = {
 }
 
 local beach = {
-	handler = {},
 	frequency = beach_frequency,
 	{name="seagull", length=4.5, gain=beach_volume}
 }
 
 local beach_frequent = {
-	handler = {},
 	frequency = beach_frequent_frequency,
 	{name="fiji_beach", length=43.5, gain=beach_frequent_volume}
 }
 
 local desert = {
-	handler = {},
 	frequency = desert_frequency,
 	{name="coyote2", length=2.5, gain=desert_volume},
 	{name="RattleSnake", length=8, gain=desert_volume}
 }
 
 local desert_frequent = {
-	handler = {},
 	frequency = desert_frequent_frequency,
 	{name="DesertMonolithMed", length=34.5, gain=desert_frequent_volume}
 }
 
 local flying = {
-	handler = {},
 	frequency = 1000,
 	on_start = "nothing_yet",
 	on_stop = "nothing_yet",
@@ -156,14 +141,12 @@ local flying = {
 }
 
 local water = {
-	handler = {},
 	frequency = 0,--dolphins dont fit into small lakes
 	{name="dolphins", length=6, gain=1},
 	{name="dolphins_screaming", length=16.5, gain=1}
 }
 
 local water_frequent = {
-	handler = {},
 	frequency = water_frequent_frequency,
 	on_stop = "drowning_gasp",
 	--on_start = "Splash",
@@ -175,7 +158,6 @@ local water_frequent = {
 }
 
 local water_surface = {
-	handler = {},
 	frequency = 1000,
 	on_stop = "Splash",
 	on_start = "Splash",
@@ -183,29 +165,24 @@ local water_surface = {
 	{name="lake_waves_2_variety", length=13.1, gain=water_surface_volume}
 }
 local splashing_water = {
-	handler = {},
 	frequency = 1000,
 	{name="Splash", length=1.22, gain=splashing_water_volume}
 }
 
 local flowing_water = {
-	handler = {},
 	frequency = 1000,
 	{name="small_waterfall", length=14, gain=flowing_water_volume}
 }
 local flowing_water2 = {
-	handler = {},
 	frequency = 1000,
 	{name="small_waterfall", length=11, gain=flowing_water_volume}
 }
 
 local lava = {
-	handler = {},
 	frequency = 1000,
 	{name="earth01a", length=20, gain=lava_volume}
 }
 local lava2 = {
-	handler = {},
 	frequency = 1000,
 	{name="earth01a", length=15, gain=lava_volume}
 }
@@ -213,7 +190,7 @@ local lava2 = {
 local modstorage = core.get_mod_storage()
 local play_music = modstorage:get_string("music") == "true"
 local music = {
-	handler = {},
+
 	frequency = music_frequency,
 	is_music=true,
 	{name="StrangelyBeautifulShort", length=3*60+.5, gain=music_volume*.7},
@@ -314,26 +291,16 @@ end
 
 
 local get_ambience = function(player)
-	local player_is_climbing = false
-	local player_is_descending = false
+	local velo = player:get_velocity()
 	local player_is_moving_horiz = false
+	if math.floor(velo.x) ~= 0 or math.floor(velo.y) ~= 0 then
+		player_is_moving_horiz = true
+	end
+	print(player_is_moving_horiz)
 	local standing_in_water = false
 	local pos = player:get_pos()
 	get_immediate_nodes(pos)
-
-	if last_x_pos ~=pos.x or last_z_pos ~=pos.z then 
-		player_is_moving_horiz = true 
-	end
-	if pos.y > last_y_pos+.5   then 
-		player_is_climbing = true 
-	end
-	if pos.y < last_y_pos-.5  then 
-		player_is_descending = true 
-	end
 	
-	last_x_pos =pos.x
-	last_z_pos =pos.z	
-	last_y_pos =pos.y
 	
 	if string.find(node_at_upper_body, "default:water") then
 		if music then
@@ -494,8 +461,7 @@ end
 
 -- start playing the sound, set the handler and delete the handler after sound is played
 local play_sound = function(list, number, is_music)
-	local player_name = ""
-	if list.handler[player_name] == nil then
+	if list.handler == nil then
 		local gain = 1.0
 		if list[number].gain ~= nil then
 			if is_music then 				
@@ -508,15 +474,14 @@ local play_sound = function(list, number, is_music)
 		end
 		local handler = minetest.sound_play(list[number].name, {gain=gain})
 		if handler ~= nil then
-			list.handler[player_name] = handler
+			list.handler = handler
 			minetest.after(list[number].length, function(args)
 				local list = args[1]
-				local player_name = args[2]
-				if list.handler[player_name] ~= nil then
-					minetest.sound_stop(list.handler[player_name])
-					list.handler[player_name] = nil
+				if list.handler ~= nil then
+					minetest.sound_stop(list.handler)
+					list.handler = nil
 				end
-			end, {list, player_name})
+			end, {list})
 		end
 	end
 end
@@ -526,219 +491,219 @@ local stop_sound = function(still_playing)
 	local player_name = ""
 	if still_playing.cave == nil then
 		local list = cave
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.cave_frequent == nil then
 		local list = cave_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.swimming_frequent == nil then
 		local list = swimming_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.beach == nil then
 		local list = beach
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.beach_frequent == nil then
 		local list = beach_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.desert == nil then
 		local list = desert
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.desert_frequent == nil then
 		local list = desert_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.night == nil then
 		local list = night
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.night_frequent == nil then
 		local list = night_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.day == nil then
 		local list = day
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.day_frequent == nil then
 		local list = day_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.music == nil then
 		local list = music
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.flowing_water == nil then
 		local list = flowing_water
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.flowing_water2 == nil then
 		local list = flowing_water2
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.lava == nil then
 		local list = lava
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end	
 	if still_playing.lava2 == nil then
 		local list = lava2
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end		
 	if still_playing.water == nil then
 		local list = water
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.water_surface == nil then
 		local list = water_surface
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then				
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 				played_on_start = false
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.water_frequent == nil then
 		local list = water_frequent
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then				
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 		--		minetest.chat_send_all("list.on_stop " .. list.on_stop  )				
 				played_on_start = false
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end
 	if still_playing.flying == nil then
 		--minetest.chat_send_all("begin stop flying "   )
 		local list = flying
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 		--	minetest.chat_send_all("handler flying "   )
 			if list.on_stop ~= nil then
 			--	minetest.chat_send_all("onstop flying"   )
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 				played_on_start = false
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end	
 	if still_playing.splashing_water == nil then
 		local list = splashing_water
-		if list.handler[player_name] ~= nil then
+		if list.handler ~= nil then
 			if list.on_stop ~= nil then
 				minetest.sound_play(list.on_stop, {gain=SOUNDVOLUME})
 			end
-			minetest.sound_stop(list.handler[player_name])
-			list.handler[player_name] = nil
+			minetest.sound_stop(list.handler)
+			list.handler = nil
 		end
 	end	
 	
